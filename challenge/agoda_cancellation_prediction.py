@@ -1,5 +1,6 @@
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 from IMLearn.utils import split_train_test
+from IMLearn.base import BaseEstimator
 
 import numpy as np
 import pandas as pd
@@ -20,14 +21,35 @@ def load_data(filename: str):
     2) Tuple of pandas.DataFrame and Series
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
-    # TODO - replace below code with any desired preprocessing
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    features = full_data[["h_booking_id",
-                          "hotel_id",
-                          "accommadation_type_name",
-                          "hotel_star_rating",
-                          "customer_nationality"]]
-    labels = full_data["cancellation_datetime"]
+    full_data = pd.read_csv(filename)
+    full_data = full_data.dropna(subset=["booking_datetime", "checkin_date", "checkout_date"])
+    features = full_data[[
+        "no_of_adults",
+        "no_of_children",
+        "no_of_extra_bed",
+        "no_of_room",
+        "is_first_booking",
+        "is_user_logged_in",
+        "request_nonesmoke",
+        "request_latecheckin",
+        "request_highfloor",
+        "request_largebed",
+        "request_twinbeds",
+        "request_airport",
+        "request_earlycheckin",
+        "guest_is_not_the_customer",
+        "hotel_star_rating"
+    ]]
+
+    for name in ["booking_datetime", "checkin_date", "checkout_date"]:
+        months = pd.to_numeric(full_data[name].str.slice(5, 7))
+        features = features.join(pd.get_dummies(months, prefix=f"{name}_month_no_"))
+
+    reference_datetime = pd.to_datetime(full_data["booking_datetime"])
+    features["checkin_date"] = (pd.to_datetime(full_data["checkin_date"]) - reference_datetime).dt.total_seconds()
+    features["checkout_date"] = (pd.to_datetime(full_data["checkout_date"]) - reference_datetime).dt.total_seconds()
+
+    labels = full_data["cancellation_datetime"].notna()
 
     return features, labels
 
