@@ -1,3 +1,5 @@
+import sklearn.model_selection
+
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 from IMLearn.utils import split_train_test
 from IMLearn.base import BaseEstimator
@@ -22,6 +24,7 @@ def load_data(filename: str):
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
     full_data = pd.read_csv(filename)
+    full_data = full_data.dropna(subset=[col for col in full_data.columns if col != "cancellation_datetime"])
     full_data = full_data.dropna(subset=["booking_datetime", "checkin_date", "checkout_date"])
     features = full_data[[
         "no_of_adults",
@@ -77,14 +80,17 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
 
 
 if __name__ == '__main__':
-    np.random.seed(0)
+    # np.random.seed(0)
 
     # Load data
     df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
-    train_X, train_y, test_X, test_y = split_train_test(df, cancellation_labels)
+    train_X, test_X, train_y, test_y = sklearn.model_selection.train_test_split(df, cancellation_labels, test_size=0.25)
 
     # Fit model over data
     estimator = AgodaCancellationEstimator().fit(train_X, train_y)
+
+    # Calc loss
+    print(estimator.loss(test_X, test_y))
 
     # Store model predictions over test set
     evaluate_and_export(estimator, test_X, "id1_id2_id3.csv")
