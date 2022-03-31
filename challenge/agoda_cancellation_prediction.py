@@ -24,8 +24,18 @@ def load_data(filename: str):
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
     full_data = pd.read_csv(filename)
-    full_data = full_data.dropna(subset=[col for col in full_data.columns if col != "cancellation_datetime"])
+    # full_data = full_data.dropna(subset=[col for col in full_data.columns if col != "cancellation_datetime"])
+    # full_data = full_data.fillna(0)
+    has_canceled_indices = full_data['cancellation_datetime'].notna()
+    for col in has_canceled_indices:
+        average_cancelled = full_data[col][has_canceled_indices].mean()
+        average_not_cancelled = full_data[col][~has_canceled_indices].mean()
+
+        indices_to_fill = ~full_data[col].notna()
+
+        full_data[col][indices_to_fill] = (has_canceled_indices)*(average_cancelled)+(~has_canceled_indices)*(average_not_cancelled)
     full_data = full_data.dropna(subset=["booking_datetime", "checkin_date", "checkout_date"])
+
     features = full_data[[
         "no_of_adults",
         "no_of_children",
@@ -52,7 +62,8 @@ def load_data(filename: str):
     features["checkin_date"] = (pd.to_datetime(full_data["checkin_date"]) - reference_datetime).dt.total_seconds()
     features["checkout_date"] = (pd.to_datetime(full_data["checkout_date"]) - reference_datetime).dt.total_seconds()
 
-    labels = full_data["cancellation_datetime"].notna()
+    labels = full_data["cancellation_datetime"] != 0
+    # labels = full_data["cancellation_datetime"].fillna(0)
 
     return features, labels
 
