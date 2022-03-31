@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import NoReturn
 from IMLearn.base import BaseEstimator
+import sklearn.ensemble
 import numpy as np
+from sklearn.metrics import accuracy_score
 
 
 class AgodaCancellationEstimator(BaseEstimator):
@@ -39,7 +41,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
 
         """
-        pass
+        self.model = sklearn.ensemble.RandomForestClassifier(n_estimators=240, max_depth=160)
+
+        self.model.fit(X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -55,7 +59,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return np.zeros(X.shape[0])
+        return self.model.predict(X)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -74,4 +78,4 @@ class AgodaCancellationEstimator(BaseEstimator):
         loss : float
             Performance under loss function
         """
-        pass
+        return accuracy_score(self.model.predict(X), y)
